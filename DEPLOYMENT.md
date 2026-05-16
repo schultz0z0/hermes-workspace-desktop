@@ -336,6 +336,28 @@ Entrar no Hermes Agent:
 docker compose exec hermes-agent bash
 ```
 
+Usar comandos do Hermes dentro do container:
+
+```bash
+/opt/hermes/.venv/bin/hermes --help
+/opt/hermes/.venv/bin/hermes setup
+```
+
+Opcionalmente, ative a venv para usar `hermes` direto na sessao:
+
+```bash
+source /opt/hermes/.venv/bin/activate
+hermes --help
+hermes setup
+```
+
+No `hermes setup`, use:
+
+```text
+Gateway working directory: /workspace
+Hermes data path: /opt/data
+```
+
 Ver ferramentas instaladas:
 
 ```bash
