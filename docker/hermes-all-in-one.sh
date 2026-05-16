@@ -11,13 +11,17 @@ fix_permissions() {
         ln -s "$HERMES_DATA_PATH" /home/hermes/.hermes 2>/dev/null || true
     fi
     touch "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
+    touch "$HERMES_DATA_PATH/.managed" 2>/dev/null || true
     chown -R hermes:hermes /opt/data 2>/dev/null || true
     chown -R hermes:hermes /workspace 2>/dev/null || true
     chown hermes:hermes /home/hermes 2>/dev/null || true
     chown -h hermes:hermes /home/hermes/.hermes 2>/dev/null || true
-    chmod -R u+rwX,go+rX /opt/data 2>/dev/null || true
-    chmod -R u+rwX,go+rX /workspace 2>/dev/null || true
+    chmod -R a+rwX /opt/data 2>/dev/null || true
+    chmod -R a+rwX /workspace 2>/dev/null || true
     chmod 666 "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
+    chmod 666 "$HERMES_DATA_PATH/.managed" 2>/dev/null || true
+    find "$HERMES_DATA_PATH" -maxdepth 2 -type f \( -name "*.db" -o -name "*.db-wal" -o -name "*.db-shm" -o -name "*.lock" \) -exec chmod 666 {} \; 2>/dev/null || true
+    find "$HERMES_DATA_PATH" -maxdepth 2 -type d -exec chmod 777 {} \; 2>/dev/null || true
 
     # Kanban uses SQLite WAL; DB file and containing dirs must remain writable.
     mkdir -p "$HERMES_DATA_PATH/kanban/boards" 2>/dev/null || true
