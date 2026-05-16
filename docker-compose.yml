@@ -34,6 +34,7 @@ services:
       context: .
       dockerfile: docker/hermes.Dockerfile
     restart: unless-stopped
+    entrypoint: ["/usr/local/bin/hermes-all-in-one.sh"]
     working_dir: /home/workspace/workspace
     command: ["gateway", "run"]
     env_file:
