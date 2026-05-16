@@ -12,8 +12,8 @@ services:
     env_file:
       - .env
     environment:
-      HERMES_UID: ${HERMES_UID:-10010}
-      HERMES_GID: ${HERMES_GID:-10010}
+      HERMES_UID: "${HERMES_UID:-10010}"
+      HERMES_GID: "${HERMES_GID:-10010}"
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: "0.0.0.0"
       API_SERVER_PORT: "8642"
@@ -70,7 +70,7 @@ services:
       - .env
     environment:
       HERMES_DATA_PATH: "/opt/data"
-      HERMES_KANBAN_PORT: ${HERMES_KANBAN_PORT:-9120}
+      HERMES_KANBAN_PORT: "${HERMES_KANBAN_PORT:-9120}"
     expose:
       - "${HERMES_KANBAN_PORT:-9120}"
     volumes:
@@ -141,22 +141,24 @@ services:
     environment:
       PORT: "8080"
       WEBUI_URL: "https://${CHAT_DOMAIN:?set CHAT_DOMAIN in .env}"
-      WEBUI_NAME: ${OPENWEBUI_NAME:-Hermes Chat}
+      WEBUI_NAME: "${OPENWEBUI_NAME:-Hermes Chat}"
       WEBUI_AUTH: "true"
-      WEBUI_SECRET_KEY: ${OPENWEBUI_SECRET_KEY:?set OPENWEBUI_SECRET_KEY in .env}
-      WEBUI_ADMIN_NAME: ${OPENWEBUI_ADMIN_NAME:-Admin}
-      WEBUI_ADMIN_EMAIL: ${OPENWEBUI_ADMIN_EMAIL:?set OPENWEBUI_ADMIN_EMAIL in .env}
-      WEBUI_ADMIN_PASSWORD: ${OPENWEBUI_ADMIN_PASSWORD:?set OPENWEBUI_ADMIN_PASSWORD in .env}
+      WEBUI_SECRET_KEY: "${OPENWEBUI_SECRET_KEY:?set OPENWEBUI_SECRET_KEY in .env}"
+      WEBUI_ADMIN_NAME: "${OPENWEBUI_ADMIN_NAME:-Admin}"
+      WEBUI_ADMIN_EMAIL: "${OPENWEBUI_ADMIN_EMAIL:?set OPENWEBUI_ADMIN_EMAIL in .env}"
+      WEBUI_ADMIN_PASSWORD: "${OPENWEBUI_ADMIN_PASSWORD:?set OPENWEBUI_ADMIN_PASSWORD in .env}"
       ENABLE_SIGNUP: "false"
       ENABLE_OLLAMA_API: "false"
       OPENAI_API_BASE_URL: "http://hermes-agent:8642/v1"
-      OPENAI_API_KEY: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
-      DEFAULT_MODELS: ${OPENWEBUI_DEFAULT_MODELS:-}
-      TASK_MODEL_EXTERNAL: ${OPENWEBUI_TASK_MODEL:-}
+      OPENAI_API_KEY: "${API_SERVER_KEY:?set API_SERVER_KEY in .env}"
+      DEFAULT_MODELS: "${OPENWEBUI_DEFAULT_MODELS:-}"
+      TASK_MODEL_EXTERNAL: "${OPENWEBUI_TASK_MODEL:-}"
     expose:
       - "8080"
     volumes:
       - open-webui-data:/app/backend/data
+      - hermes-agent-data:/hermes-data
+      - hermes-workspace-files:/workspace
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=5).read()\" || exit 1"]
       interval: 10s

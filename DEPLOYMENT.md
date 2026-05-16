@@ -51,7 +51,10 @@ Your external Traefik stack owns `ACME_EMAIL`, ports `80/443`, and the
 Open WebUI is wired to Hermes Agent through the internal Docker URL
 `http://hermes-agent:8642/v1` and uses `API_SERVER_KEY` as its OpenAI-compatible
 API key. Its first admin user is created by `OPENWEBUI_ADMIN_EMAIL` and
-`OPENWEBUI_ADMIN_PASSWORD` on a fresh `open-webui-data` volume.
+`OPENWEBUI_ADMIN_PASSWORD` on a fresh `open-webui-data` volume. The Open WebUI
+container also mounts the Hermes volumes at `/hermes-data` and `/workspace` so
+it can access the same persistent Hermes state and workspace files without
+mixing its own application database with Hermes Agent's data directory.
 
 The Kanban subdomain runs a separate Hermes dashboard process on the same
 `hermes-agent-data` volume, so it sees the same Kanban database as the main
