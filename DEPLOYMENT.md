@@ -1,85 +1,354 @@
-# Hermes VPS deployment
+# Deploy Hermes na VPS
 
-This compose stack is intended for one VPS running:
+Guia direto para subir e manter o stack Hermes na VPS.
 
-- Hermes Agent gateway API on `https://api-hermes.solucoes-nexus.tech`
-- Hermes Agent dashboard on `https://hermes.solucoes-nexus.tech`
-- Hermes Workspace on `https://workspace.solucoes-nexus.tech`
-- Open WebUI on `https://chat.solucoes-nexus.tech`
-- Hermes Kanban dashboard on `https://kanban.solucoes-nexus.tech`
-- SearXNG as an internal-only search backend for Hermes Agent
+Este projeto sobe:
 
-It assumes Traefik is already running separately on the same Docker host with
-the Docker provider enabled and `exposedbydefault=false`. This stack only
-declares Traefik labels; it does not create a Traefik container.
+- Hermes Agent API: `https://api-hermes.solucoes-nexus.tech`
+- Hermes Dashboard: `https://hermes.solucoes-nexus.tech`
+- Hermes Workspace: `https://workspace.solucoes-nexus.tech`
+- Open WebUI: `https://chat.solucoes-nexus.tech`
+- Hermes Kanban: `https://kanban.solucoes-nexus.tech`
+- SearXNG interno: usado pelo Hermes Agent, sem dominio publico
 
-## DNS
+O Traefik deve rodar em outro compose na mesma VPS, com Docker provider ativo e
+`exposedbydefault=false`. Este stack apenas declara labels do Traefik.
 
-Create these `A` records pointing to the VPS public IPv4:
+## 1. DNS
 
-- `hermes.solucoes-nexus.tech`
-- `workspace.solucoes-nexus.tech`
-- `api-hermes.solucoes-nexus.tech`
-- `chat.solucoes-nexus.tech`
-- `kanban.solucoes-nexus.tech`
+Crie registros `A` apontando para o IP publico da VPS:
 
-## Environment
+```text
+hermes.solucoes-nexus.tech
+workspace.solucoes-nexus.tech
+api-hermes.solucoes-nexus.tech
+chat.solucoes-nexus.tech
+kanban.solucoes-nexus.tech
+```
 
-Copy `.env.example` to `.env` and replace every `change-me-*` value.
+## 2. Preparar pasta
 
-Generate a strong API key:
+Na VPS:
+
+```bash
+mkdir -p /opt/hermes
+cd /opt/hermes
+```
+
+Clone o repositorio:
+
+```bash
+git clone <URL_DO_REPOSITORIO> .
+```
+
+Se o projeto ja existir:
+
+```bash
+cd /opt/hermes
+git pull
+```
+
+## 3. Configurar `.env`
+
+Crie o arquivo:
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Campos obrigatorios:
+
+```env
+TZ=America/Sao_Paulo
+VPS_IP=92.112.179.235
+
+HERMES_DOMAIN=hermes.solucoes-nexus.tech
+WORKSPACE_DOMAIN=workspace.solucoes-nexus.tech
+HERMES_API_DOMAIN=api-hermes.solucoes-nexus.tech
+CHAT_DOMAIN=chat.solucoes-nexus.tech
+KANBAN_DOMAIN=kanban.solucoes-nexus.tech
+
+API_SERVER_KEY=<chave-forte>
+HERMES_PASSWORD=<senha-workspace>
+DASHBOARD_BASIC_AUTH=<usuario:hash>
+
+OPENWEBUI_SECRET_KEY=<chave-forte>
+OPENWEBUI_ADMIN_NAME=NexusAI
+OPENWEBUI_ADMIN_EMAIL=raphaelschultz12@gmail.com
+OPENWEBUI_ADMIN_PASSWORD=<senha-openwebui>
+
+SEARXNG_SECRET=<chave-forte>
+```
+
+Nao usamos `TRAEFIK_HOST` neste stack. Cada servico tem um dominio explicito:
+`HERMES_DOMAIN`, `WORKSPACE_DOMAIN`, `HERMES_API_DOMAIN`, `CHAT_DOMAIN` e
+`KANBAN_DOMAIN`.
+
+Gerar chaves fortes:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Generate dashboard basic-auth:
+Gerar Basic Auth para dashboard e kanban:
 
 ```bash
-htpasswd -nbB admin 'your-password'
+htpasswd -nbB NexusAI 'SUA_SENHA'
 ```
 
-If the generated bcrypt hash contains `$`, escape each `$` as `$$` in `.env`,
-because Docker Compose treats `$` as interpolation syntax.
+Se o hash gerado tiver `$`, escape cada `$` como `$$` dentro do `.env`.
 
-Provider keys are intentionally open-ended. Add any provider variable supported
-by Hermes Agent to `.env`; `env_file` passes it through to the agent container.
+Exemplo:
 
-Your external Traefik stack owns `ACME_EMAIL`, ports `80/443`, and the
-`traefik-letsencrypt` volume. Do not duplicate them in this Hermes stack.
+```env
+DASHBOARD_BASIC_AUTH=NexusAI:$$2y$$05$$...
+```
 
-Open WebUI is wired to Hermes Agent through the internal Docker URL
-`http://hermes-agent:8642/v1` and uses `API_SERVER_KEY` as its OpenAI-compatible
-API key. Its first admin user is created by `OPENWEBUI_ADMIN_EMAIL` and
-`OPENWEBUI_ADMIN_PASSWORD` on a fresh `open-webui-data` volume. The Open WebUI
-container also mounts the Hermes volumes at `/hermes-data` and `/workspace` so
-it can access the same persistent Hermes state and workspace files without
-mixing its own application database with Hermes Agent's data directory.
+## 4. Providers
 
-The Kanban subdomain runs a separate Hermes dashboard process on the same
-`hermes-agent-data` volume, so it sees the same Kanban database as the main
-Agent and Workspace.
+Adicione no `.env` as chaves dos providers que quiser usar:
 
-## Run
+```env
+OPENROUTER_API_KEY=
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+GOOGLE_API_KEY=
+GEMINI_API_KEY=
+GROQ_API_KEY=
+MISTRAL_API_KEY=
+XAI_API_KEY=
+NOUS_API_KEY=
+HF_TOKEN=
+NOVITA_API_KEY=
+MINIMAX_API_KEY=
+```
+
+O compose passa essas variaveis para o Hermes Agent via `env_file`.
+
+## 5. GitHub
+
+Se o Hermes precisar acessar repositorios privados, preencha os tokens:
+
+```env
+GITHUB_TOKEN=ghp_...
+GH_TOKEN=ghp_...
+```
+
+Use um token com o menor escopo possivel. Para repositorios privados, normalmente
+`repo` e suficiente em Personal Access Token classico. Em fine-grained tokens,
+libere apenas os repositorios necessarios.
+
+## 6. Validar compose
+
+Antes de subir:
+
+```bash
+docker compose config
+```
+
+Se esse comando falhar, corrija o `.env` antes de continuar.
+
+## 7. Build e subida
 
 ```bash
 docker compose up -d --build
+```
+
+Ver logs:
+
+```bash
 docker compose logs -f hermes-agent hermes-workspace hermes-kanban open-webui searxng
 ```
 
-Health checks:
+Ver status:
+
+```bash
+docker compose ps
+```
+
+## 8. Validar APIs
+
+Carregue a key no shell:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+Teste a API publica do Hermes:
 
 ```bash
 curl -fsS https://api-hermes.solucoes-nexus.tech/health
-curl -fsS -H "Authorization: Bearer $API_SERVER_KEY" https://api-hermes.solucoes-nexus.tech/v1/models
+```
+
+Teste modelos via API OpenAI-compatible:
+
+```bash
+curl -fsS \
+  -H "Authorization: Bearer $API_SERVER_KEY" \
+  https://api-hermes.solucoes-nexus.tech/v1/models
+```
+
+Teste chat simples:
+
+```bash
+curl -fsS https://api-hermes.solucoes-nexus.tech/v1/chat/completions \
+  -H "Authorization: Bearer $API_SERVER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"hermes-agent","messages":[{"role":"user","content":"Responda apenas: ok"}]}'
+```
+
+Teste Open WebUI:
+
+```bash
 curl -fsS https://chat.solucoes-nexus.tech/health
 ```
 
-Hermes Desktop should use:
+## 9. Acessos
 
-- URL: `https://api-hermes.solucoes-nexus.tech`
-- API key: same value as `API_SERVER_KEY`
+Hermes Desktop:
 
-OpenAI-compatible clients usually need the `/v1` base URL:
+```text
+URL: https://api-hermes.solucoes-nexus.tech
+API key: valor de API_SERVER_KEY
+```
 
-- `https://api-hermes.solucoes-nexus.tech/v1`
+OpenAI-compatible clients:
+
+```text
+Base URL: https://api-hermes.solucoes-nexus.tech/v1
+API key: valor de API_SERVER_KEY
+```
+
+Interfaces web:
+
+```text
+Hermes Dashboard: https://hermes.solucoes-nexus.tech
+Workspace: https://workspace.solucoes-nexus.tech
+Open WebUI: https://chat.solucoes-nexus.tech
+Kanban: https://kanban.solucoes-nexus.tech
+```
+
+## 10. Arquitetura de dados
+
+Volumes principais:
+
+```text
+hermes-agent-data       Estado do Hermes Agent, config, memoria, kanban e dados persistentes
+hermes-workspace-files  Arquivos de trabalho compartilhados em /workspace
+open-webui-data         Banco/config propria do Open WebUI
+searxng-cache           Cache do SearXNG
+```
+
+Open WebUI usa o Hermes Agent como backend em:
+
+```text
+http://hermes-agent:8642/v1
+```
+
+Ele tambem monta os volumes Hermes em:
+
+```text
+/hermes-data
+/workspace
+```
+
+O banco proprio do Open WebUI continua separado em `/app/backend/data` para nao
+misturar schemas internos com os dados do Hermes.
+
+## 11. Atualizar stack
+
+```bash
+cd /opt/hermes
+git pull
+docker compose pull
+docker compose up -d --build
+docker compose ps
+```
+
+Ver logs apos atualizar:
+
+```bash
+docker compose logs -f --tail=200 hermes-agent hermes-workspace hermes-kanban open-webui searxng
+```
+
+## 12. Reiniciar servicos
+
+Reiniciar tudo:
+
+```bash
+docker compose restart
+```
+
+Reiniciar apenas o Agent:
+
+```bash
+docker compose restart hermes-agent
+```
+
+Rebuild completo:
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
+## 13. Diagnostico rapido
+
+Containers:
+
+```bash
+docker compose ps
+```
+
+Logs do Agent:
+
+```bash
+docker compose logs -f hermes-agent
+```
+
+Logs do Open WebUI:
+
+```bash
+docker compose logs -f open-webui
+```
+
+Logs do Traefik externo:
+
+```bash
+docker logs -f <NOME_CONTAINER_TRAEFIK>
+```
+
+Entrar no Hermes Agent:
+
+```bash
+docker compose exec hermes-agent bash
+```
+
+Ver ferramentas instaladas:
+
+```bash
+docker compose exec hermes-agent bash -lc 'jq --version && rg --version && fd --version && python3 --version'
+```
+
+Ver tokens GitHub disponiveis dentro do Agent sem imprimir o segredo:
+
+```bash
+docker compose exec hermes-agent bash -lc 'test -n "$GITHUB_TOKEN" && echo GITHUB_TOKEN_OK; test -n "$GH_TOKEN" && echo GH_TOKEN_OK'
+```
+
+Testar SearXNG interno:
+
+```bash
+docker compose exec hermes-agent curl -fsS 'http://searxng:8080/search?q=teste&format=json'
+```
+
+## 14. Cuidados
+
+- Nao publique portas diretas neste compose; entrada publica deve passar pelo Traefik.
+- Nao commite `.env`; ele esta no `.gitignore`.
+- Mantenha `API_SERVER_KEY`, `OPENWEBUI_SECRET_KEY` e `SEARXNG_SECRET` fortes.
+- Se trocar `OPENWEBUI_ADMIN_PASSWORD` depois do primeiro boot, talvez precise alterar a senha pela UI ou recriar o volume `open-webui-data`.
+- Apagar volumes remove dados persistentes. Nao use `docker compose down -v` em producao sem backup.
