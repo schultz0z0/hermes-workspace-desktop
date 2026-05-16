@@ -18,6 +18,18 @@ fix_permissions() {
     chmod -R u+rwX,go+rX /opt/data 2>/dev/null || true
     chmod -R u+rwX,go+rX /workspace 2>/dev/null || true
     chmod 666 "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
+
+    # Kanban uses SQLite WAL; DB file and containing dirs must remain writable.
+    mkdir -p "$HERMES_DATA_PATH/kanban/boards" 2>/dev/null || true
+    chmod 775 "$HERMES_DATA_PATH" "$HERMES_DATA_PATH/kanban" "$HERMES_DATA_PATH/kanban/boards" 2>/dev/null || true
+    chown -R hermes:hermes "$HERMES_DATA_PATH/kanban" 2>/dev/null || true
+
+    chmod 666 "$HERMES_DATA_PATH/kanban.db" 2>/dev/null || true
+    chmod 666 "$HERMES_DATA_PATH/kanban.db-wal" 2>/dev/null || true
+    chmod 666 "$HERMES_DATA_PATH/kanban.db-shm" 2>/dev/null || true
+
+    find "$HERMES_DATA_PATH/kanban/boards" -type f -name "kanban.db*" -exec chmod 666 {} \; 2>/dev/null || true
+    find "$HERMES_DATA_PATH/kanban/boards" -type d -exec chmod 775 {} \; 2>/dev/null || true
 }
 
 fix_permissions

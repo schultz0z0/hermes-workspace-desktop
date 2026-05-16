@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: docker/hermes.Dockerfile
     restart: unless-stopped
+    user: "0:0"
     entrypoint: ["/usr/local/bin/hermes-all-in-one.sh"]
     command: ["gateway", "run"]
     working_dir: /workspace
