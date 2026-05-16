@@ -36,13 +36,6 @@ fix_permissions() {
     find "$HERMES_DATA_PATH/kanban/boards" -type d -exec chmod 775 {} \; 2>/dev/null || true
 }
 
-fix_permissions
-
-(while true; do
-    fix_permissions
-    sleep 5
-done) &
-
 run_as_hermes() {
     su -s /bin/bash hermes -c "$1"
 }
@@ -52,21 +45,20 @@ init_kanban() {
     fix_permissions
 }
 
-start_dashboard() {
-    if [ "${HERMES_DASHBOARD:-0}" != "1" ]; then
-        return 0
-    fi
-
+post_boot_maintenance() {
     (
+        sleep 10
+        fix_permissions
+        init_kanban
         while true; do
-            run_as_hermes "source /opt/hermes/.venv/bin/activate && cd /opt/hermes && HERMES_DATA_PATH=$HERMES_DATA_PATH HERMES_HOME=$HERMES_HOME hermes dashboard --host ${HERMES_DASHBOARD_HOST:-0.0.0.0} --port ${HERMES_DASHBOARD_PORT:-9119} --no-open --insecure" || true
-            sleep 5
+            fix_permissions
+            sleep 10
         done
     ) &
 }
 
-init_kanban
-start_dashboard
+fix_permissions
+post_boot_maintenance
 
 if [ "$#" -eq 0 ]; then
     set -- gateway run
