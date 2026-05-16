@@ -56,33 +56,19 @@ services:
       - traefik.http.routers.hermes-dashboard.middlewares=hermes-dashboard-auth,hermes-secure-headers
       - traefik.http.routers.hermes-dashboard.service=hermes-dashboard
       - traefik.http.services.hermes-dashboard.loadbalancer.server.port=9119
-
-  hermes-unified:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    depends_on:
-      hermes-agent:
-        condition: service_healthy
-    volumes:
-      - ./config/nginx/hermes-unified.conf:/etc/nginx/conf.d/default.conf:ro
-    expose:
-      - "80"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 8
-      start_period: 30s
-    networks:
-      - hermes-internal
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-hermes}_hermes-internal
-      - traefik.http.routers.hermes-unified.rule=Host(`${HERMES_API_DOMAIN:?set HERMES_API_DOMAIN in .env}`)
-      - traefik.http.routers.hermes-unified.entrypoints=websecure
-      - traefik.http.routers.hermes-unified.tls.certresolver=letsencrypt
-      - traefik.http.routers.hermes-unified.middlewares=hermes-secure-headers
-      - traefik.http.services.hermes-unified.loadbalancer.server.port=80
+      - traefik.http.routers.hermes-api-gateway.rule=Host(`${HERMES_API_DOMAIN:?set HERMES_API_DOMAIN in .env}`) && (PathPrefix(`/v1`) || Path(`/health`) || Path(`/docs`) || Path(`/openapi.json`))
+      - traefik.http.routers.hermes-api-gateway.entrypoints=websecure
+      - traefik.http.routers.hermes-api-gateway.tls.certresolver=letsencrypt
+      - traefik.http.routers.hermes-api-gateway.priority=100
+      - traefik.http.routers.hermes-api-gateway.middlewares=hermes-secure-headers
+      - traefik.http.routers.hermes-api-gateway.service=hermes-gateway
+      - traefik.http.services.hermes-gateway.loadbalancer.server.port=8642
+      - traefik.http.routers.hermes-api-dashboard.rule=Host(`${HERMES_API_DOMAIN:?set HERMES_API_DOMAIN in .env}`)
+      - traefik.http.routers.hermes-api-dashboard.entrypoints=websecure
+      - traefik.http.routers.hermes-api-dashboard.tls.certresolver=letsencrypt
+      - traefik.http.routers.hermes-api-dashboard.priority=10
+      - traefik.http.routers.hermes-api-dashboard.middlewares=hermes-secure-headers
+      - traefik.http.routers.hermes-api-dashboard.service=hermes-dashboard
 
   hermes-workspace:
     build:
@@ -90,7 +76,7 @@ services:
       dockerfile: docker/workspace.Dockerfile
     restart: unless-stopped
     depends_on:
-      hermes-unified:
+      hermes-agent:
         condition: service_healthy
     env_file:
       - .env
@@ -99,8 +85,8 @@ services:
       HERMES_HOME: /home/workspace/.hermes
       HERMES_DATA_PATH: /home/workspace/.hermes
       HERMES_WORKSPACE_DIR: /workspace
-      HERMES_API_URL: "http://hermes-unified"
-      HERMES_DASHBOARD_URL: "http://hermes-unified"
+      HERMES_API_URL: "https://${HERMES_API_DOMAIN:?set HERMES_API_DOMAIN in .env}"
+      HERMES_DASHBOARD_URL: "https://${HERMES_API_DOMAIN:?set HERMES_API_DOMAIN in .env}"
       HERMES_API_TOKEN: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
       HERMES_PASSWORD: ${HERMES_PASSWORD:?set HERMES_PASSWORD in .env}
       COOKIE_SECURE: ${COOKIE_SECURE:-1}

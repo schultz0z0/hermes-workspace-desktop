@@ -14,12 +14,15 @@ Este projeto sobe:
 O Traefik deve rodar em outro compose na mesma VPS, com Docker provider ativo e
 `exposedbydefault=false`. Este stack apenas declara labels do Traefik.
 
-A API unificada usa um proxy interno:
+A API unificada usa o Traefik externo com roteamento por path direto para o
+container `hermes-agent`. Nao existe container Nginx neste stack.
 
 ```text
-api-hermes.solucoes-nexus.tech -> hermes-unified:80
-hermes-unified/v1, /health, /docs, /openapi.json -> hermes-agent:8642
-hermes-unified/* -> hermes-agent:9119
+api-hermes.solucoes-nexus.tech/v1*            -> hermes-agent:8642
+api-hermes.solucoes-nexus.tech/health         -> hermes-agent:8642
+api-hermes.solucoes-nexus.tech/docs           -> hermes-agent:8642
+api-hermes.solucoes-nexus.tech/openapi.json   -> hermes-agent:8642
+api-hermes.solucoes-nexus.tech/*              -> hermes-agent:9119
 ```
 
 ## 1. DNS
@@ -157,7 +160,7 @@ Se esse comando falhar, corrija o `.env` antes de continuar.
 ## 7. Build e subida
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build --remove-orphans
 ```
 
 Ver logs:
@@ -208,11 +211,11 @@ Teste a UI do dashboard tambem pelo endpoint unificado:
 curl -fsS https://api-hermes.solucoes-nexus.tech/ | head
 ```
 
-Teste o proxy unificado internamente:
+Teste as portas internas do Agent:
 
 ```bash
-docker compose exec hermes-unified wget -qO- http://localhost/health
-docker compose exec hermes-unified wget -qO- http://localhost/api/status
+docker compose exec hermes-agent curl -fsS http://localhost:8642/health
+docker compose exec hermes-agent curl -fsS http://localhost:9119/api/status
 ```
 
 Teste chat simples:
@@ -261,15 +264,16 @@ HERMES_DASHBOARD_URL=https://api-hermes.solucoes-nexus.tech
 HERMES_API_TOKEN=<valor de API_SERVER_KEY>
 ```
 
-Dentro do Docker Compose, o Workspace usa a mesma ideia sem sair pela internet:
+Dentro do Docker Compose, o Workspace tambem usa o endpoint publico unificado.
+Isso garante que Workspace e Desktop testem o mesmo contrato de API:
 
 ```env
-HERMES_API_URL=http://hermes-unified
-HERMES_DASHBOARD_URL=http://hermes-unified
+HERMES_API_URL=https://api-hermes.solucoes-nexus.tech
+HERMES_DASHBOARD_URL=https://api-hermes.solucoes-nexus.tech
 ```
 
-Open WebUI usa apenas a API OpenAI-compatible; por isso ele fica direto no
-gateway do Hermes:
+Open WebUI e a unica excecao: ele usa apenas a API OpenAI-compatible, por isso
+fica direto no gateway interno do Hermes:
 
 ```env
 OPENAI_API_BASE_URL=http://hermes-agent:8642/v1
@@ -318,7 +322,7 @@ misturar schemas internos com os dados do Hermes.
 cd /opt/hermes
 git pull
 docker compose pull
-docker compose up -d --build
+docker compose up -d --build --remove-orphans
 docker compose ps
 ```
 
