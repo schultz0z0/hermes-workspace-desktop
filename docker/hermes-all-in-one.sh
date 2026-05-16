@@ -5,10 +5,16 @@ export HERMES_DATA_PATH="${HERMES_DATA_PATH:-/opt/data}"
 export HERMES_HOME="${HERMES_HOME:-$HERMES_DATA_PATH}"
 
 fix_permissions() {
-    mkdir -p "$HERMES_DATA_PATH" /workspace
+    mkdir -p "$HERMES_DATA_PATH" /workspace /home/hermes
+    if [ ! -L /home/hermes/.hermes ]; then
+        rm -rf /home/hermes/.hermes 2>/dev/null || true
+        ln -s "$HERMES_DATA_PATH" /home/hermes/.hermes 2>/dev/null || true
+    fi
     touch "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
     chown -R hermes:hermes /opt/data 2>/dev/null || true
     chown -R hermes:hermes /workspace 2>/dev/null || true
+    chown hermes:hermes /home/hermes 2>/dev/null || true
+    chown -h hermes:hermes /home/hermes/.hermes 2>/dev/null || true
     chmod -R u+rwX,go+rX /opt/data 2>/dev/null || true
     chmod -R u+rwX,go+rX /workspace 2>/dev/null || true
     chmod 666 "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
