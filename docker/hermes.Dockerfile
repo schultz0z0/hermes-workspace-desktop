@@ -11,6 +11,3 @@ RUN /opt/hermes/.venv/bin/python3 -m ensurepip --upgrade && \
     /opt/hermes/.venv/bin/python3 -m pip install playwright && \
     /opt/hermes/.venv/bin/python3 -m playwright install chromium && \
     /opt/hermes/.venv/bin/python3 -m playwright install-deps
-
-COPY docker/hermes-all-in-one.sh /usr/local/bin/hermes-all-in-one.sh
-RUN chmod +x /usr/local/bin/hermes-all-in-one.sh
