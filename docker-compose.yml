@@ -1,8 +1,69 @@
+name: ${COMPOSE_PROJECT_NAME:-hermes}
+
 services:
-  hermes-workspace:
-    image: ghcr.io/outsourc-e/hermes-workspace:latest
+  hermes-agent:
+    build:
+      context: .
+      dockerfile: docker/hermes.Dockerfile
     restart: unless-stopped
-    user: "0:0"
+    entrypoint: ["/usr/local/bin/hermes-all-in-one.sh"]
+    command: ["gateway", "run"]
+    working_dir: /workspace
+    env_file:
+      - .env
+    environment:
+      HERMES_UID: ${HERMES_UID:-10010}
+      HERMES_GID: ${HERMES_GID:-10010}
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: "0.0.0.0"
+      API_SERVER_PORT: "8642"
+      API_SERVER_KEY: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
+      API_SERVER_CORS_ORIGINS: ${API_SERVER_CORS_ORIGINS:-}
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
+      SEARXNG_URL: "http://searxng:8080"
+    expose:
+      - "8642"
+      - "9119"
+    volumes:
+      - hermes-agent-data:/opt/data
+      - hermes-workspace-files:/workspace
+    depends_on:
+      searxng:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8642/health && curl -fsS http://localhost:9119/api/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    networks:
+      - hermes-internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.hermes-secure-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.hermes-secure-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.hermes-secure-headers.headers.stsPreload=true
+      - traefik.http.middlewares.hermes-dashboard-auth.basicauth.users=${DASHBOARD_BASIC_AUTH:?set DASHBOARD_BASIC_AUTH in .env}
+      - traefik.http.routers.hermes-api.rule=Host(`${HERMES_API_DOMAIN:?set HERMES_API_DOMAIN in .env}`)
+      - traefik.http.routers.hermes-api.entrypoints=websecure
+      - traefik.http.routers.hermes-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.hermes-api.middlewares=hermes-secure-headers
+      - traefik.http.routers.hermes-api.service=hermes-api
+      - traefik.http.services.hermes-api.loadbalancer.server.port=8642
+      - traefik.http.routers.hermes-dashboard.rule=Host(`${HERMES_DOMAIN:?set HERMES_DOMAIN in .env}`)
+      - traefik.http.routers.hermes-dashboard.entrypoints=websecure
+      - traefik.http.routers.hermes-dashboard.tls.certresolver=letsencrypt
+      - traefik.http.routers.hermes-dashboard.middlewares=hermes-dashboard-auth,hermes-secure-headers
+      - traefik.http.routers.hermes-dashboard.service=hermes-dashboard
+      - traefik.http.services.hermes-dashboard.loadbalancer.server.port=9119
+
+  hermes-workspace:
+    build:
+      context: .
+      dockerfile: docker/workspace.Dockerfile
+    restart: unless-stopped
     depends_on:
       hermes-agent:
         condition: service_healthy
@@ -10,62 +71,28 @@ services:
       - .env
     environment:
       HOME: /home/workspace
-      HERMES_WORKSPACE_DIR: /home/workspace/workspace
+      HERMES_HOME: /home/workspace/.hermes
+      HERMES_WORKSPACE_DIR: /workspace
       HERMES_API_URL: "http://hermes-agent:8642"
       HERMES_DASHBOARD_URL: "http://hermes-agent:9119"
-      HERMES_API_TOKEN: "${API_SERVER_KEY:-}"
-      HERMES_PASSWORD: "${HERMES_PASSWORD:-}"
-      COOKIE_SECURE: "1"
-      TRUST_PROXY: "1"
+      HERMES_API_TOKEN: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
+      HERMES_PASSWORD: ${HERMES_PASSWORD:?set HERMES_PASSWORD in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-1}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
     expose:
       - "3000"
+    volumes:
+      - hermes-agent-data:/home/workspace/.hermes
+      - hermes-workspace-files:/workspace
+    networks:
+      - hermes-internal
     labels:
       - traefik.enable=true
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.${TRAEFIK_HOST}`)
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
-      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
-    volumes:
-      - hermes-workspace-data:/home/workspace/.hermes
-      - hermes-shared-workspace:/home/workspace/workspace
-
-  hermes-agent:
-    build:
-      context: .
-      dockerfile: docker/hermes.Dockerfile
-    restart: unless-stopped
-    entrypoint: ["/usr/local/bin/hermes-all-in-one.sh"]
-    working_dir: /home/workspace/workspace
-    command: ["gateway", "run"]
-    env_file:
-      - .env
-    ports:
-      - "${HERMES_DESKTOP_PUBLIC_PORT:-8642}:8642"
-    expose:
-      - "8642"
-      - "9119"
-    environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
-      API_SERVER_KEY: ${API_SERVER_KEY:-}
-      API_SERVER_HOST: "0.0.0.0"
-      API_SERVER_ENABLED: "true"
-      HERMES_DASHBOARD: "1"
-      HERMES_DASHBOARD_HOST: "0.0.0.0"
-      HERMES_DASHBOARD_PORT: "9119"
-    volumes:
-      - hermes-data:/opt/data
-      - hermes-shared-workspace:/home/workspace/workspace
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8642/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+      - traefik.http.routers.hermes-workspace.rule=Host(`${WORKSPACE_DOMAIN:?set WORKSPACE_DOMAIN in .env}`)
+      - traefik.http.routers.hermes-workspace.entrypoints=websecure
+      - traefik.http.routers.hermes-workspace.tls.certresolver=letsencrypt
+      - traefik.http.routers.hermes-workspace.middlewares=hermes-secure-headers
+      - traefik.http.services.hermes-workspace.loadbalancer.server.port=3000
 
   searxng:
     image: ghcr.io/searxng/searxng:latest
@@ -73,21 +100,20 @@ services:
     env_file:
       - .env
     environment:
-      SEARXNG_SECRET: "${SEARXNG_SECRET}"
+      SEARXNG_BASE_URL: "http://searxng:8080/"
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
     volumes:
       - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
       - searxng-cache:/var/cache/searxng
     expose:
       - "8080"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.searxng-${COMPOSE_PROJECT_NAME}.rule=Host(`searxng.${TRAEFIK_HOST}`)
-      - traefik.http.routers.searxng-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
-      - traefik.http.routers.searxng-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
-      - traefik.http.services.searxng-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+    networks:
+      - hermes-internal
+
+networks:
+  hermes-internal:
 
 volumes:
-  hermes-data:
-  hermes-workspace-data:
-  hermes-shared-workspace:
+  hermes-agent-data:
+  hermes-workspace-files:
   searxng-cache:
