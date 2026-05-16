@@ -17,9 +17,9 @@ O Traefik deve rodar em outro compose na mesma VPS, com Docker provider ativo e
 A API unificada usa um proxy interno:
 
 ```text
-api-hermes.solucoes-nexus.tech -> hermes-unified:8090
-hermes-unified:8090/v1, /health, /docs, /openapi.json -> hermes-agent:8642
-hermes-unified:8090/* -> hermes-agent:9119
+api-hermes.solucoes-nexus.tech -> hermes-unified:80
+hermes-unified/v1, /health, /docs, /openapi.json -> hermes-agent:8642
+hermes-unified/* -> hermes-agent:9119
 ```
 
 ## 1. DNS
@@ -211,8 +211,8 @@ curl -fsS https://api-hermes.solucoes-nexus.tech/ | head
 Teste o proxy unificado internamente:
 
 ```bash
-docker compose exec hermes-unified wget -qO- http://localhost:8090/health
-docker compose exec hermes-unified wget -qO- http://localhost:8090/api/status
+docker compose exec hermes-unified wget -qO- http://localhost/health
+docker compose exec hermes-unified wget -qO- http://localhost/api/status
 ```
 
 Teste chat simples:
@@ -264,8 +264,8 @@ HERMES_API_TOKEN=<valor de API_SERVER_KEY>
 Dentro do Docker Compose, o Workspace usa a mesma ideia sem sair pela internet:
 
 ```env
-HERMES_API_URL=http://hermes-unified:8090
-HERMES_DASHBOARD_URL=http://hermes-unified:8090
+HERMES_API_URL=http://hermes-unified
+HERMES_DASHBOARD_URL=http://hermes-unified
 ```
 
 Open WebUI usa apenas a API OpenAI-compatible; por isso ele fica direto no
