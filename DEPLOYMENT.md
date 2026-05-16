@@ -14,6 +14,14 @@ Este projeto sobe:
 O Traefik deve rodar em outro compose na mesma VPS, com Docker provider ativo e
 `exposedbydefault=false`. Este stack apenas declara labels do Traefik.
 
+A API unificada usa um proxy interno:
+
+```text
+api-hermes.solucoes-nexus.tech -> hermes-unified:8090
+hermes-unified:8090/v1, /health, /docs, /openapi.json -> hermes-agent:8642
+hermes-unified:8090/* -> hermes-agent:9119
+```
+
 ## 1. DNS
 
 Crie registros `A` apontando para o IP publico da VPS:
@@ -194,6 +202,19 @@ Teste API estendida do dashboard no mesmo host de API:
 curl -fsS https://api-hermes.solucoes-nexus.tech/api/status
 ```
 
+Teste a UI do dashboard tambem pelo endpoint unificado:
+
+```bash
+curl -fsS https://api-hermes.solucoes-nexus.tech/ | head
+```
+
+Teste o proxy unificado internamente:
+
+```bash
+docker compose exec hermes-unified wget -qO- http://localhost:8090/health
+docker compose exec hermes-unified wget -qO- http://localhost:8090/api/status
+```
+
 Teste chat simples:
 
 ```bash
@@ -240,10 +261,25 @@ HERMES_DASHBOARD_URL=https://api-hermes.solucoes-nexus.tech
 HERMES_API_TOKEN=<valor de API_SERVER_KEY>
 ```
 
+Dentro do Docker Compose, o Workspace usa a mesma ideia sem sair pela internet:
+
+```env
+HERMES_API_URL=http://hermes-unified:8090
+HERMES_DASHBOARD_URL=http://hermes-unified:8090
+```
+
+Open WebUI usa apenas a API OpenAI-compatible; por isso ele fica direto no
+gateway do Hermes:
+
+```env
+OPENAI_API_BASE_URL=http://hermes-agent:8642/v1
+```
+
 Interfaces web:
 
 ```text
 Hermes Dashboard: https://hermes.solucoes-nexus.tech
+Hermes Dashboard via endpoint unificado: https://api-hermes.solucoes-nexus.tech
 Workspace: https://workspace.solucoes-nexus.tech
 Open WebUI: https://chat.solucoes-nexus.tech
 Kanban: dentro do Hermes Dashboard
