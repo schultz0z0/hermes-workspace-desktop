@@ -6,17 +6,19 @@ export HERMES_HOME="${HERMES_HOME:-$HERMES_DATA_PATH}"
 
 fix_permissions() {
     mkdir -p "$HERMES_DATA_PATH" /workspace
+    touch "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
     chown -R hermes:hermes /opt/data 2>/dev/null || true
     chown -R hermes:hermes /workspace 2>/dev/null || true
     chmod -R u+rwX,go+rX /opt/data 2>/dev/null || true
     chmod -R u+rwX,go+rX /workspace 2>/dev/null || true
+    chmod 666 "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
 }
 
 fix_permissions
 
 (while true; do
     fix_permissions
-    sleep 30
+    sleep 5
 done) &
 
 run_as_hermes() {
