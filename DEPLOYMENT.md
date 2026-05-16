@@ -251,7 +251,7 @@ http://hermes-agent:8642/v1
 Ele tambem monta os volumes Hermes em:
 
 ```text
-/hermes-data
+/hermes-data  somente leitura
 /workspace
 ```
 

@@ -4,6 +4,8 @@ set -e
 (while true; do
     chown -R hermes:hermes /opt/data 2>/dev/null || true
     chown -R hermes:hermes /workspace 2>/dev/null || true
+    chmod -R u+rwX,go+rX /opt/data 2>/dev/null || true
+    chmod -R u+rwX,go+rX /workspace 2>/dev/null || true
     sleep 30
 done) &
 

@@ -160,7 +160,7 @@ services:
       - "8080"
     volumes:
       - open-webui-data:/app/backend/data
-      - hermes-agent-data:/hermes-data
+      - hermes-agent-data:/hermes-data:ro
       - hermes-workspace-files:/workspace
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=5).read()\" || exit 1"]
