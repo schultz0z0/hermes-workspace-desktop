@@ -39,6 +39,25 @@ run_as_hermes() {
     su -s /bin/bash hermes -c "$1"
 }
 
+configure_kanban() {
+    run_as_hermes "HERMES_DATA_PATH=$HERMES_DATA_PATH HERMES_HOME=$HERMES_HOME /opt/hermes/.venv/bin/python3 - <<'PY'
+from pathlib import Path
+
+import yaml
+
+config_path = Path('/opt/data/config.yaml')
+if not config_path.exists():
+    raise SystemExit(0)
+
+data = yaml.safe_load(config_path.read_text()) or {}
+kanban = data.setdefault('kanban', {})
+if kanban.get('dispatch_in_gateway') is not False:
+    kanban['dispatch_in_gateway'] = False
+    config_path.write_text(yaml.safe_dump(data, sort_keys=False))
+PY" || true
+    fix_permissions
+}
+
 init_kanban() {
     run_as_hermes "source /opt/hermes/.venv/bin/activate && cd /workspace && HERMES_DATA_PATH=$HERMES_DATA_PATH HERMES_HOME=$HERMES_HOME hermes kanban init" || true
     fix_permissions
@@ -48,6 +67,7 @@ post_boot_maintenance() {
     (
         sleep 10
         fix_permissions
+        configure_kanban
         init_kanban
         while true; do
             fix_permissions
