@@ -38,7 +38,7 @@ cd /opt/hermes
 Clone o repositorio:
 
 ```bash
-git clone <URL_DO_REPOSITORIO> .
+git clone https://github.com/schultz0z0/hermes-workspace-desktop .
 ```
 
 Se o projeto ja existir:
