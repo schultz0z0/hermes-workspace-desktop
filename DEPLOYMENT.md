@@ -4,8 +4,8 @@ Guia direto para subir e manter o stack Hermes na VPS.
 
 Este projeto sobe:
 
-- Hermes Agent API: `https://api-hermes.solucoes-nexus.tech`
 - Hermes Dashboard: `https://hermes.solucoes-nexus.tech`
+- Hermes API unificada: `https://api-hermes.solucoes-nexus.tech`
 - Hermes Workspace: `https://workspace.solucoes-nexus.tech`
 - Open WebUI: `https://chat.solucoes-nexus.tech`
 - Hermes Kanban: dentro do dashboard em `https://hermes.solucoes-nexus.tech`
@@ -188,6 +188,12 @@ curl -fsS \
   https://api-hermes.solucoes-nexus.tech/v1/models
 ```
 
+Teste API estendida do dashboard no mesmo host de API:
+
+```bash
+curl -fsS https://api-hermes.solucoes-nexus.tech/api/status
+```
+
 Teste chat simples:
 
 ```bash
@@ -223,6 +229,15 @@ OpenAI-compatible clients:
 ```text
 Base URL: https://api-hermes.solucoes-nexus.tech/v1
 API key: valor de API_SERVER_KEY
+```
+
+Hermes Workspace usa dois campos internamente, mas eles podem apontar para o
+mesmo host publico quando o Traefik faz roteamento por path:
+
+```env
+HERMES_API_URL=https://api-hermes.solucoes-nexus.tech
+HERMES_DASHBOARD_URL=https://api-hermes.solucoes-nexus.tech
+HERMES_API_TOKEN=<valor de API_SERVER_KEY>
 ```
 
 Interfaces web:
