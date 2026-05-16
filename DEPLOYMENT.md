@@ -8,7 +8,7 @@ Este projeto sobe:
 - Hermes Dashboard: `https://hermes.solucoes-nexus.tech`
 - Hermes Workspace: `https://workspace.solucoes-nexus.tech`
 - Open WebUI: `https://chat.solucoes-nexus.tech`
-- Hermes Kanban: `https://kanban.solucoes-nexus.tech`
+- Hermes Kanban: dentro do dashboard em `https://hermes.solucoes-nexus.tech`
 - SearXNG interno: usado pelo Hermes Agent, sem dominio publico
 
 O Traefik deve rodar em outro compose na mesma VPS, com Docker provider ativo e
@@ -23,7 +23,6 @@ hermes.solucoes-nexus.tech
 workspace.solucoes-nexus.tech
 api-hermes.solucoes-nexus.tech
 chat.solucoes-nexus.tech
-kanban.solucoes-nexus.tech
 ```
 
 ## 2. Preparar pasta
@@ -67,7 +66,6 @@ HERMES_DOMAIN=hermes.solucoes-nexus.tech
 WORKSPACE_DOMAIN=workspace.solucoes-nexus.tech
 HERMES_API_DOMAIN=api-hermes.solucoes-nexus.tech
 CHAT_DOMAIN=chat.solucoes-nexus.tech
-KANBAN_DOMAIN=kanban.solucoes-nexus.tech
 
 API_SERVER_KEY=<chave-forte>
 HERMES_PASSWORD=<senha-workspace>
@@ -82,8 +80,7 @@ SEARXNG_SECRET=<chave-forte>
 ```
 
 Nao usamos `TRAEFIK_HOST` neste stack. Cada servico tem um dominio explicito:
-`HERMES_DOMAIN`, `WORKSPACE_DOMAIN`, `HERMES_API_DOMAIN`, `CHAT_DOMAIN` e
-`KANBAN_DOMAIN`.
+`HERMES_DOMAIN`, `WORKSPACE_DOMAIN`, `HERMES_API_DOMAIN` e `CHAT_DOMAIN`.
 
 Gerar chaves fortes:
 
@@ -91,7 +88,7 @@ Gerar chaves fortes:
 openssl rand -hex 32
 ```
 
-Gerar Basic Auth para dashboard e kanban:
+Gerar Basic Auth para o dashboard:
 
 ```bash
 htpasswd -nbB NexusAI 'SUA_SENHA'
@@ -158,7 +155,7 @@ docker compose up -d --build
 Ver logs:
 
 ```bash
-docker compose logs -f hermes-agent hermes-workspace hermes-kanban open-webui searxng
+docker compose logs -f hermes-agent hermes-workspace open-webui searxng
 ```
 
 Ver status:
@@ -210,7 +207,6 @@ Teste dashboards internos:
 
 ```bash
 docker compose exec hermes-agent curl -fsS http://localhost:9119/
-docker compose exec hermes-kanban curl -fsS http://localhost:9120/
 ```
 
 ## 9. Acessos
@@ -235,7 +231,7 @@ Interfaces web:
 Hermes Dashboard: https://hermes.solucoes-nexus.tech
 Workspace: https://workspace.solucoes-nexus.tech
 Open WebUI: https://chat.solucoes-nexus.tech
-Kanban: https://kanban.solucoes-nexus.tech
+Kanban: dentro do Hermes Dashboard
 ```
 
 ## 10. Arquitetura de dados
@@ -278,7 +274,7 @@ docker compose ps
 Ver logs apos atualizar:
 
 ```bash
-docker compose logs -f --tail=200 hermes-agent hermes-workspace hermes-kanban open-webui searxng
+docker compose logs -f --tail=200 hermes-agent hermes-workspace open-webui searxng
 ```
 
 ## 12. Reiniciar servicos

@@ -61,42 +61,6 @@ services:
       - traefik.http.routers.hermes-dashboard.service=hermes-dashboard
       - traefik.http.services.hermes-dashboard.loadbalancer.server.port=9119
 
-  hermes-kanban:
-    build:
-      context: .
-      dockerfile: docker/hermes.Dockerfile
-    restart: unless-stopped
-    entrypoint: ["/usr/local/bin/hermes-kanban-dashboard.sh"]
-    env_file:
-      - .env
-    environment:
-      HERMES_DATA_PATH: "/opt/data"
-      HERMES_KANBAN_PORT: "${HERMES_KANBAN_PORT:-9120}"
-    expose:
-      - "${HERMES_KANBAN_PORT:-9120}"
-    volumes:
-      - hermes-agent-data:/opt/data
-      - hermes-workspace-files:/workspace
-    depends_on:
-      hermes-agent:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:${HERMES_KANBAN_PORT:-9120}/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 8
-      start_period: 60s
-    networks:
-      - hermes-internal
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-hermes}_hermes-internal
-      - traefik.http.routers.hermes-kanban.rule=Host(`${KANBAN_DOMAIN:?set KANBAN_DOMAIN in .env}`)
-      - traefik.http.routers.hermes-kanban.entrypoints=websecure
-      - traefik.http.routers.hermes-kanban.tls.certresolver=letsencrypt
-      - traefik.http.routers.hermes-kanban.middlewares=hermes-dashboard-auth,hermes-secure-headers
-      - traefik.http.services.hermes-kanban.loadbalancer.server.port=${HERMES_KANBAN_PORT:-9120}
-
   hermes-workspace:
     build:
       context: .
