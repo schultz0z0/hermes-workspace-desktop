@@ -20,6 +20,7 @@ services:
       API_SERVER_KEY: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
       API_SERVER_CORS_ORIGINS: ${API_SERVER_CORS_ORIGINS:-}
       HERMES_DATA_PATH: "/opt/data"
+      HERMES_HOME: "/opt/data"
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: "0.0.0.0"
       HERMES_DASHBOARD_PORT: "9119"
@@ -74,6 +75,7 @@ services:
     environment:
       HOME: /home/workspace
       HERMES_HOME: /home/workspace/.hermes
+      HERMES_DATA_PATH: /home/workspace/.hermes
       HERMES_WORKSPACE_DIR: /workspace
       HERMES_API_URL: "http://hermes-agent:8642"
       HERMES_DASHBOARD_URL: "http://hermes-agent:9119"
