@@ -34,7 +34,7 @@ services:
       searxng:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8642/health && curl -fsS http://localhost:9119/api/status || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8642/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 8
@@ -81,7 +81,7 @@ services:
       hermes-agent:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:${HERMES_KANBAN_PORT:-9120}/api/status || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${HERMES_KANBAN_PORT:-9120}/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 8

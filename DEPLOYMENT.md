@@ -206,6 +206,13 @@ Teste Open WebUI:
 curl -fsS https://chat.solucoes-nexus.tech/health
 ```
 
+Teste dashboards internos:
+
+```bash
+docker compose exec hermes-agent curl -fsS http://localhost:9119/
+docker compose exec hermes-kanban curl -fsS http://localhost:9120/
+```
+
 ## 9. Acessos
 
 Hermes Desktop:
@@ -307,6 +314,12 @@ Logs do Agent:
 
 ```bash
 docker compose logs -f hermes-agent
+```
+
+Testar healthcheck real do Agent:
+
+```bash
+docker compose exec hermes-agent curl -fsS http://localhost:8642/health
 ```
 
 Logs do Open WebUI:
