@@ -18,7 +18,7 @@ start_dashboard() {
 
     (
         while true; do
-            run_as_hermes "source /opt/hermes/.venv/bin/activate && cd /opt/hermes && HERMES_DASHBOARD_HOST=${HERMES_DASHBOARD_HOST:-0.0.0.0} HERMES_DASHBOARD_PORT=${HERMES_DASHBOARD_PORT:-9119} hermes dashboard" || true
+            run_as_hermes "source /opt/hermes/.venv/bin/activate && cd /opt/hermes && HERMES_DATA_PATH=${HERMES_DATA_PATH:-/opt/data} hermes dashboard --host ${HERMES_DASHBOARD_HOST:-0.0.0.0} --port ${HERMES_DASHBOARD_PORT:-9119} --no-open --insecure" || true
             sleep 5
         done
     ) &

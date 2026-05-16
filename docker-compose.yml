@@ -43,6 +43,7 @@ services:
       - hermes-internal
     labels:
       - traefik.enable=true
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-hermes}_hermes-internal
       - traefik.http.middlewares.hermes-secure-headers.headers.stsSeconds=31536000
       - traefik.http.middlewares.hermes-secure-headers.headers.stsIncludeSubdomains=true
       - traefik.http.middlewares.hermes-secure-headers.headers.stsPreload=true
@@ -89,6 +90,7 @@ services:
       - hermes-internal
     labels:
       - traefik.enable=true
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-hermes}_hermes-internal
       - traefik.http.routers.hermes-kanban.rule=Host(`${KANBAN_DOMAIN:?set KANBAN_DOMAIN in .env}`)
       - traefik.http.routers.hermes-kanban.entrypoints=websecure
       - traefik.http.routers.hermes-kanban.tls.certresolver=letsencrypt
@@ -124,6 +126,7 @@ services:
       - hermes-internal
     labels:
       - traefik.enable=true
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-hermes}_hermes-internal
       - traefik.http.routers.hermes-workspace.rule=Host(`${WORKSPACE_DOMAIN:?set WORKSPACE_DOMAIN in .env}`)
       - traefik.http.routers.hermes-workspace.entrypoints=websecure
       - traefik.http.routers.hermes-workspace.tls.certresolver=letsencrypt
@@ -169,6 +172,7 @@ services:
       - hermes-internal
     labels:
       - traefik.enable=true
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME:-hermes}_hermes-internal
       - traefik.http.routers.open-webui.rule=Host(`${CHAT_DOMAIN:?set CHAT_DOMAIN in .env}`)
       - traefik.http.routers.open-webui.entrypoints=websecure
       - traefik.http.routers.open-webui.tls.certresolver=letsencrypt
