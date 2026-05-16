@@ -1,0 +1,97 @@
+services:
+  hermes:
+    build:
+      context: .
+      dockerfile: docker/hermes.Dockerfile
+    restart: unless-stopped
+    entrypoint: [ "/usr/local/bin/hermes-all-in-one.sh" ]
+    env_file:
+      - .env
+    volumes:
+      - ./data/hermes:/opt/data
+    environment:
+      GATEWAY_ALLOW_ALL_USERS: "true"
+      HERMES_DATA_PATH: "/opt/data"
+    expose:
+      - "${HERMES_API_PORT_CORE}"
+      - "${HERMES_API_PORT_ENS}"
+      - "${HERMES_API_PORT_CLEMENTINO}"
+      - "${HERMES_DASHBOARD_PORT}"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hermes-core-${COMPOSE_PROJECT_NAME}.rule=Host(`core.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-core-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.hermes-core-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.hermes-core-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=${HERMES_API_PORT_CORE}
+      - traefik.http.routers.hermes-core-${COMPOSE_PROJECT_NAME}-http.rule=Host(`core.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-core-${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+      - traefik.http.routers.hermes-core-${COMPOSE_PROJECT_NAME}-http.middlewares=hermes-core-${COMPOSE_PROJECT_NAME}-redirect
+      - traefik.http.middlewares.hermes-core-${COMPOSE_PROJECT_NAME}-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.hermes-ens-${COMPOSE_PROJECT_NAME}.rule=Host(`ens.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-ens-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.hermes-ens-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.hermes-ens-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=${HERMES_API_PORT_ENS}
+      - traefik.http.routers.hermes-ens-${COMPOSE_PROJECT_NAME}-http.rule=Host(`ens.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-ens-${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+      - traefik.http.routers.hermes-ens-${COMPOSE_PROJECT_NAME}-http.middlewares=hermes-ens-${COMPOSE_PROJECT_NAME}-redirect
+      - traefik.http.middlewares.hermes-ens-${COMPOSE_PROJECT_NAME}-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.hermes-clementino-${COMPOSE_PROJECT_NAME}.rule=Host(`clementino.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-clementino-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.hermes-clementino-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.hermes-clementino-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=${HERMES_API_PORT_CLEMENTINO}
+      - traefik.http.routers.hermes-clementino-${COMPOSE_PROJECT_NAME}-http.rule=Host(`clementino.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-clementino-${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+      - traefik.http.routers.hermes-clementino-${COMPOSE_PROJECT_NAME}-http.middlewares=hermes-clementino-${COMPOSE_PROJECT_NAME}-redirect
+      - traefik.http.middlewares.hermes-clementino-${COMPOSE_PROJECT_NAME}-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.hermes-dashboard-${COMPOSE_PROJECT_NAME}.rule=Host(`dashboard.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-dashboard-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.hermes-dashboard-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.hermes-dashboard-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=${HERMES_DASHBOARD_PORT}
+      - traefik.http.routers.hermes-dashboard-${COMPOSE_PROJECT_NAME}-http.rule=Host(`dashboard.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-dashboard-${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+      - traefik.http.routers.hermes-dashboard-${COMPOSE_PROJECT_NAME}-http.middlewares=hermes-dashboard-${COMPOSE_PROJECT_NAME}-redirect
+      - traefik.http.middlewares.hermes-dashboard-${COMPOSE_PROJECT_NAME}-redirect.redirectscheme.scheme=https
+
+  hermes-workspace:
+    image: ghcr.io/outsourc-e/hermes-workspace:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HERMES_API_URL: "${HERMES_CORE_PUBLIC_URL}"
+      HERMES_DASHBOARD_URL: "${HERMES_DASHBOARD_PUBLIC_URL}"
+      HERMES_API_TOKEN: "${HERMES_API_KEY_CORE}"
+    expose:
+      - "3000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hermes-workspace-${COMPOSE_PROJECT_NAME}.rule=Host(`workspace.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-workspace-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.hermes-workspace-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.hermes-workspace-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=3000
+      - traefik.http.routers.hermes-workspace-${COMPOSE_PROJECT_NAME}-http.rule=Host(`workspace.${TRAEFIK_HOST}`)
+      - traefik.http.routers.hermes-workspace-${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+      - traefik.http.routers.hermes-workspace-${COMPOSE_PROJECT_NAME}-http.middlewares=hermes-workspace-${COMPOSE_PROJECT_NAME}-redirect
+      - traefik.http.middlewares.hermes-workspace-${COMPOSE_PROJECT_NAME}-redirect.redirectscheme.scheme=https
+
+  searxng:
+    image: ghcr.io/searxng/searxng:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SEARXNG_SECRET: "${SEARXNG_SECRET}"
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
+      - searxng-cache:/var/cache/searxng
+    expose:
+      - "8080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.searxng-${COMPOSE_PROJECT_NAME}.rule=Host(`searxng.${TRAEFIK_HOST}`)
+      - traefik.http.routers.searxng-${COMPOSE_PROJECT_NAME}.entrypoints=websecure
+      - traefik.http.routers.searxng-${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+      - traefik.http.services.searxng-${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=8080
+
+volumes:
+  searxng-cache:
