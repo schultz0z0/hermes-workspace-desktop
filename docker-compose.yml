@@ -19,6 +19,7 @@ services:
       API_SERVER_PORT: "8642"
       API_SERVER_KEY: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
       API_SERVER_CORS_ORIGINS: ${API_SERVER_CORS_ORIGINS:-}
+      HERMES_DATA_PATH: "/opt/data"
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: "0.0.0.0"
       HERMES_DASHBOARD_PORT: "9119"
@@ -59,6 +60,41 @@ services:
       - traefik.http.routers.hermes-dashboard.service=hermes-dashboard
       - traefik.http.services.hermes-dashboard.loadbalancer.server.port=9119
 
+  hermes-kanban:
+    build:
+      context: .
+      dockerfile: docker/hermes.Dockerfile
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/hermes-kanban-dashboard.sh"]
+    env_file:
+      - .env
+    environment:
+      HERMES_DATA_PATH: "/opt/data"
+      HERMES_KANBAN_PORT: ${HERMES_KANBAN_PORT:-9120}
+    expose:
+      - "${HERMES_KANBAN_PORT:-9120}"
+    volumes:
+      - hermes-agent-data:/opt/data
+      - hermes-workspace-files:/workspace
+    depends_on:
+      hermes-agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${HERMES_KANBAN_PORT:-9120}/api/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    networks:
+      - hermes-internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hermes-kanban.rule=Host(`${KANBAN_DOMAIN:?set KANBAN_DOMAIN in .env}`)
+      - traefik.http.routers.hermes-kanban.entrypoints=websecure
+      - traefik.http.routers.hermes-kanban.tls.certresolver=letsencrypt
+      - traefik.http.routers.hermes-kanban.middlewares=hermes-dashboard-auth,hermes-secure-headers
+      - traefik.http.services.hermes-kanban.loadbalancer.server.port=${HERMES_KANBAN_PORT:-9120}
+
   hermes-workspace:
     build:
       context: .
@@ -94,6 +130,49 @@ services:
       - traefik.http.routers.hermes-workspace.middlewares=hermes-secure-headers
       - traefik.http.services.hermes-workspace.loadbalancer.server.port=3000
 
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    restart: unless-stopped
+    depends_on:
+      hermes-agent:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PORT: "8080"
+      WEBUI_URL: "https://${CHAT_DOMAIN:?set CHAT_DOMAIN in .env}"
+      WEBUI_NAME: ${OPENWEBUI_NAME:-Hermes Chat}
+      WEBUI_AUTH: "true"
+      WEBUI_SECRET_KEY: ${OPENWEBUI_SECRET_KEY:?set OPENWEBUI_SECRET_KEY in .env}
+      WEBUI_ADMIN_NAME: ${OPENWEBUI_ADMIN_NAME:-Admin}
+      WEBUI_ADMIN_EMAIL: ${OPENWEBUI_ADMIN_EMAIL:?set OPENWEBUI_ADMIN_EMAIL in .env}
+      WEBUI_ADMIN_PASSWORD: ${OPENWEBUI_ADMIN_PASSWORD:?set OPENWEBUI_ADMIN_PASSWORD in .env}
+      ENABLE_SIGNUP: "false"
+      ENABLE_OLLAMA_API: "false"
+      OPENAI_API_BASE_URL: "http://hermes-agent:8642/v1"
+      OPENAI_API_KEY: ${API_SERVER_KEY:?set API_SERVER_KEY in .env}
+      DEFAULT_MODELS: ${OPENWEBUI_DEFAULT_MODELS:-}
+      TASK_MODEL_EXTERNAL: ${OPENWEBUI_TASK_MODEL:-}
+    expose:
+      - "8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=5).read()\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 60s
+    networks:
+      - hermes-internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.open-webui.rule=Host(`${CHAT_DOMAIN:?set CHAT_DOMAIN in .env}`)
+      - traefik.http.routers.open-webui.entrypoints=websecure
+      - traefik.http.routers.open-webui.tls.certresolver=letsencrypt
+      - traefik.http.routers.open-webui.middlewares=hermes-secure-headers
+      - traefik.http.services.open-webui.loadbalancer.server.port=8080
+
   searxng:
     image: ghcr.io/searxng/searxng:latest
     restart: unless-stopped
@@ -116,4 +195,5 @@ networks:
 volumes:
   hermes-agent-data:
   hermes-workspace-files:
+  open-webui-data:
   searxng-cache:

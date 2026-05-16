@@ -17,4 +17,5 @@ RUN /opt/hermes/.venv/bin/python3 -m ensurepip --upgrade && \
 ENV PATH="/opt/hermes-tools-venv/bin:${PATH}"
 
 COPY docker/hermes-all-in-one.sh /usr/local/bin/hermes-all-in-one.sh
-RUN chmod +x /usr/local/bin/hermes-all-in-one.sh
+COPY docker/hermes-kanban-dashboard.sh /usr/local/bin/hermes-kanban-dashboard.sh
+RUN chmod +x /usr/local/bin/hermes-all-in-one.sh /usr/local/bin/hermes-kanban-dashboard.sh
