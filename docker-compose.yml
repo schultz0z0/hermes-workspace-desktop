@@ -31,6 +31,8 @@ services:
     expose:
       - "8642"
       - "9119"
+    ports:
+      - "127.0.0.1:8642:8642"
     volumes:
       - hermes-agent-data:/opt/data
       - hermes-workspace-files:/workspace
