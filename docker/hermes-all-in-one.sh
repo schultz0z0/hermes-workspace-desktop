@@ -12,10 +12,12 @@ fix_permissions() {
     fi
     touch "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
     rm -f "$HERMES_DATA_PATH/.managed" 2>/dev/null || true
+    chown -R hermes:hermes /opt/hermes 2>/dev/null || true
     chown -R hermes:hermes /opt/data 2>/dev/null || true
     chown -R hermes:hermes /workspace 2>/dev/null || true
     chown hermes:hermes /home/hermes 2>/dev/null || true
     chown -h hermes:hermes /home/hermes/.hermes 2>/dev/null || true
+    chmod -R u+rwX,g+rwX /opt/hermes 2>/dev/null || true
     chmod -R a+rwX /opt/data 2>/dev/null || true
     chmod -R a+rwX /workspace 2>/dev/null || true
     chmod 666 "$HERMES_DATA_PATH/gateway.lock" 2>/dev/null || true
