@@ -391,11 +391,13 @@ Entrar no Hermes Agent:
 docker compose exec hermes-agent bash
 ```
 
-Usar comandos do Hermes dentro do container:
+Usar comandos do Hermes dentro do container (ou dentro da pasta raíz do projeto para liberar hermes mexer no filesystem)
 
 ```bash
 /opt/hermes/.venv/bin/hermes --help
 /opt/hermes/.venv/bin/hermes setup
+docker compose exec -u root hermes-agent bash -lc 'chown -R hermes:hermes /opt/hermes && chmod -R u+rwX,g+rwX /opt/hermes'
+docker compose exec -u hermes hermes-agent bash -lc 'echo ok > /opt/hermes/.perm_test && cat /opt/hermes/.perm_test && rm /opt/hermes/.perm_test && echo VALIDACAO_OK'
 ```
 
 Opcionalmente, ative a venv para usar `hermes` direto na sessao:
