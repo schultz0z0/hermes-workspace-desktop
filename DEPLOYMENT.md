@@ -440,3 +440,85 @@ docker compose exec hermes-agent curl -fsS 'http://searxng:8080/search?q=teste&f
 - Mantenha `API_SERVER_KEY`, `OPENWEBUI_SECRET_KEY` e `SEARXNG_SECRET` fortes.
 - Se trocar `OPENWEBUI_ADMIN_PASSWORD` depois do primeiro boot, talvez precise alterar a senha pela UI ou recriar o volume `open-webui-data`.
 - Apagar volumes remove dados persistentes. Nao use `docker compose down -v` em producao sem backup.
+
+## 15. Hermes Desktop via SSH Tunnel
+
+O compose publica o gateway do Hermes somente no localhost da VPS:
+
+```yaml
+ports:
+  - "127.0.0.1:8642:8642"
+```
+
+Isso permite usar SSH Tunnel sem expor a porta `8642` publicamente.
+
+Validar na VPS:
+
+```bash
+cd /opt/hermes
+curl -fsS http://127.0.0.1:8642/health
+```
+
+Resposta esperada:
+
+```json
+{"status":"ok","platform":"hermes-agent"}
+```
+
+### Configuracao inicial no Windows
+
+Abra o PowerShell como Administrador uma unica vez:
+
+```powershell
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+```
+
+Depois abra um PowerShell normal e carregue sua chave:
+
+```powershell
+ssh-add C:\Users\Raphael\.ssh\id_ed25519
+```
+
+Digite a passphrase da chave quando pedir.
+
+Validar se a chave esta carregada:
+
+```powershell
+ssh-add -l
+```
+
+Validar o tunel manualmente pelo seu PC:
+
+```powershell
+ssh -i C:\Users\Raphael\.ssh\id_ed25519 -p 22 root@92.112.179.235 "curl -fsS http://127.0.0.1:8642/health"
+```
+
+Se retornar `status ok`, configure o Hermes Desktop:
+
+```text
+Modo: SSH Tunnel
+SSH Host: 92.112.179.235
+SSH Port: 22
+Username: root
+Private Key Path: C:/Users/Raphael/.ssh/id_ed25519
+Remote Hermes Port: 8642
+```
+
+Use barras `/` no caminho da chave dentro do Hermes Desktop.
+
+### Uso recorrente
+
+Depois de reiniciar o PC, confira se a chave ja esta no agente:
+
+```powershell
+ssh-add -l
+```
+
+Se nao aparecer sua chave, carregue novamente:
+
+```powershell
+ssh-add C:\Users\Raphael\.ssh\id_ed25519
+```
+
+Depois disso, abra o Hermes Desktop e conecte via `SSH Tunnel`.
